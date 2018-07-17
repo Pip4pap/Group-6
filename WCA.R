@@ -2,6 +2,8 @@ library(rworldmap)
 library(RColorBrewer)
 library(dplyr)
 library(ggplot2)
+library(gridExtra)
+library(reshape2)
 rank_df <- read.csv("Desktop/school/Recess/Data_set_6_Fifa_Rankings/fifa_ranking.csv", stringsAsFactors=F ,sep=",")
 #Correct country names in dataset to match those in rworldmap 
 rank_df$region <- tolower(rank_df$country_full)
@@ -64,3 +66,30 @@ individualConf <- recentRank %>%
         panel.grid.major.y= element_blank()) +
   labs(title='Rank, with respect their total points, of the 206 countries in the FIFA',
        subtitle='as of June 2018') + facet_wrap(~confederation,scales='free')
+#Top ranked teams
+  #Pick out month/year for the rank_date column
+rank_df$rank_date_month <- as.Date(sapply(rank_df$rank_date, function(x) paste0(strsplit(x,'-')[[1]][1],'-',strsplit(x,'-')[[1]][2],'-01')))
+rank_df$rank_date_year <- as.Date(sapply(rank_df$rank_date, function(x) paste0(strsplit(x,'-')[[1]][1],'-01-01')))
+  #Group by month and year
+lead <- data.frame(rank_df %>% group_by(rank_date_month, region)%>%
+                     summarize(medianRank = median(rank)) %>% filter(medianRank<2))
+countries <- sort(unique(lead$region))
+colors <- c('#87CEEB','#DC143C','#FFD700','#000080','#E5E5E5','#4169E1','#FFA500','#8B2500')
+cols <- data.frame("region"=countries, "color"=colors)
+cols$region <- as.character(cols$region)
+
+lead <- data.frame(left_join(lead, cols, by='region'))
+fifaLeaders <- lead %>% ggplot(aes(x=rank_date_month,y=1)) + geom_histogram(aes(fill=color),stat='identity',color='black',size=.001) + 
+  scale_fill_identity() + theme_light() + coord_flip() + scale_x_date(date_breaks = "1 year", date_labels =  "%Y") + 
+  labs(title='FIFA World Ranking Leaders', subtitle='per month') + 
+  theme(legend.position='right',legend.direction='vertical',axis.text.x=element_blank(),panel.grid.major.x=element_blank()) + 
+  annotate("text", x=as.Date("1997-01-01"), y = 1.2, label = "BRAZIL", size=3, colour="gray30") + 
+  annotate("text", x=as.Date("2002-01-01"), y = 1.22, label = "FRANCE", size=3, colour="gray30") + 
+  annotate("text", x=as.Date("2004-01-01"), y = 1.2, label = "BRAZIL", size=3, colour="gray30") + 
+  annotate("text", x=as.Date("2007-03-01"), y = 1.2, label = "ITALY", size=3, colour="gray30") + 
+  annotate("text", x=as.Date("2011-06-01"), y = 1.32, label = "NETHERLANDS", size=3, colour="gray30") + 
+  annotate("text", x=as.Date("2013-06-01"), y = 1.2, label = "SPAIN", size=3, colour="gray30") +
+  annotate("text", x=as.Date("2016-01-01"), y = 1.23, label = "BELGIUM", size=3, colour="gray30") + 
+  annotate("text", x=as.Date("2016-08-01"), y = 1.27, label = "ARGENTINA", size=3, colour="gray30") + 
+  annotate("text", x=as.Date("2018-01-01"), y = 1.24, label = "GERMANY", size=3, colour="gray30") + 
+  ylim(0, 1.5)
