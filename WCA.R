@@ -3,6 +3,7 @@ library(RColorBrewer)
 library(dplyr)
 library(ggplot2)
 library(gridExtra)
+library(ggthemes)
 library(reshape2)
 rank_df <- read.csv("Desktop/school/Recess/Data_set_6_Fifa_Rankings/fifa_ranking.csv", stringsAsFactors=F ,sep=",")
 #Correct country names in dataset to match those in rworldmap 
@@ -38,18 +39,10 @@ countriesMap <- map_data("world")
 countriesMap$region <- tolower(countriesMap$region)
 #Mutate-merge 'regions' from Maps with most recent rankings data
 results <- data.frame(left_join(countriesMap, recentRank %>% select(confederation, region), by="region"))
-
-###Magic by ggplot2
-#Bar plot for the 206 countries
-barRank <- recentRank %>% ggplot(aes(x=reorder(region, -rank), y=total_points, fill=confederation)) +
-                          geom_bar(stat="identity") + coord_flip() + theme_light(10) +
-                          scale_fill_brewer(name="", palette="Paired") +
-                          theme(legend.position="None", panel.grid.major.y = element_blank()) + 
-                          labs(title="The rank, according to total points, of the 206 countries of FIFA")
 #Map showing domain of confederations
-map<-ggplot(results) + 
+map <- ggplot(results) + 
   geom_polygon(aes(x=long, y=lat,group=group, fill = confederation)) + 
-  theme_light(10) + 
+  theme_fivethirtyeight(10) + 
   theme(
     panel.grid.major = element_blank(),
     axis.text=element_blank(),
@@ -57,15 +50,16 @@ map<-ggplot(results) +
     legend.text=element_text(size=10),legend.key.size = unit(.3, "cm")) +
   scale_fill_brewer(name='',palette='Paired', na.value='black') +
   coord_fixed(1.3) + labs(subtitle='Domain of the six confederations of FIFA')
-#Bar plots of individual confederations
-individualConf <- recentRank %>% 
-  ggplot(aes(x=reorder(region,-rank),y=total_points,fill=confederation)) +
-  geom_bar(stat='identity') + coord_flip() + theme_light(10) + 
-  scale_fill_brewer(name='',palette='Paired') + 
-  theme(legend.position='None', 
-        panel.grid.major.y= element_blank()) +
-  labs(title='Rank, with respect their total points, of the 206 countries in the FIFA',
-       subtitle='as of June 2018') + facet_wrap(~confederation,scales='free')
+# barRank + annotation_custom(ggplotGrob(map),xmin=0, xmax=100,ymin=300,ymax=1700)
+# #Bar plots of individual confederations
+# individualConf <- recentRank %>%
+#   ggplot(aes(x=reorder(region,-rank),y=total_points,fill=confederation)) +
+#   geom_bar(stat='identity', width=0.7) + coord_flip() + theme_fivethirtyeight(10) +
+#   scale_fill_brewer(name='',palette='Paired') +
+#   theme(legend.position='None',
+#         panel.grid.major.y= element_blank()) +
+#   labs(title='Rank, with respect their total points, of the 206 countries in the FIFA',
+#        subtitle='as of June 2018') + facet_wrap(~confederation,scales='free')
 #Top ranked teams
   #Pick out month/year for the rank_date column
 rank_df$rank_date_month <- as.Date(sapply(rank_df$rank_date, function(x) paste0(strsplit(x,'-')[[1]][1],'-',strsplit(x,'-')[[1]][2],'-01')))
@@ -80,7 +74,7 @@ cols$region <- as.character(cols$region)
 
 lead <- data.frame(left_join(lead, cols, by='region'))
 fifaLeaders <- lead %>% ggplot(aes(x=rank_date_month,y=1)) + geom_histogram(aes(fill=color),stat='identity',color='black',size=.001) + 
-  scale_fill_identity() + theme_light() + coord_flip() + scale_x_date(date_breaks = "1 year", date_labels =  "%Y") + 
+  scale_fill_identity() + theme_fivethirtyeight() + coord_flip() + scale_x_date(date_breaks = "1 year", date_labels =  "%Y") + 
   labs(title='FIFA World Ranking Leaders', subtitle='per month') + 
   theme(legend.position='right',legend.direction='vertical',axis.text.x=element_blank(),panel.grid.major.x=element_blank()) + 
   annotate("text", x=as.Date("1997-01-01"), y = 1.2, label = "BRAZIL", size=3, colour="gray30") + 
@@ -93,3 +87,55 @@ fifaLeaders <- lead %>% ggplot(aes(x=rank_date_month,y=1)) + geom_histogram(aes(
   annotate("text", x=as.Date("2016-08-01"), y = 1.27, label = "ARGENTINA", size=3, colour="gray30") + 
   annotate("text", x=as.Date("2018-01-01"), y = 1.24, label = "GERMANY", size=3, colour="gray30") + 
   ylim(0, 1.5)
+#A team's rank over time
+countryRank <- rank_df %>% 
+  filter(region=='belgium') %>% 
+  select(rank, total_points, previous_points, rank_change, cur_year_avg, rank_date_year) %>%
+  group_by(rank_date_year) %>% mutate(meanRank = mean(rank,na.rm=T), meanPoints = mean(total_points)) %>%
+  ggplot(aes(x=rank_date_year)) + geom_line(aes(y=meanRank),size=2,alpha=0.25, colour="#CC0000") + geom_point(aes(y=meanRank), size=2, colour="#CC0000") +
+  theme_fivethirtyeight() + scale_y_reverse() + labs(title = 'Belgium rank')
+#A team's total points over time
+gTotalPoints <- rank_df %>% filter(region=='spain') %>% 
+  select(rank,total_points, previous_points, rank_change, cur_year_avg, rank_date_year) %>%
+  group_by(rank_date_year) %>% mutate(meanRank = mean(rank,na.rm=T), meanPoints = mean(total_points))%>% 
+  ggplot(aes(x=rank_date_year)) + geom_line(aes(y=meanPoints),size=2,alpha=0.25, colour='#006666') + geom_point(aes(y=meanPoints),size=2, colour='#006666') +
+  labs(title= 'Spain\'s total points') +
+  geom_curve(aes(x = as.Date("2007-01-01"), y = 500, xend = as.Date("2009-11-01"), yend =25),curvature = -.05,arrow = arrow(length = unit(0.02, "npc")),color='#0072B2',size=.25) + 
+  annotate("text", x=as.Date("2006-01-01"), y = 600, label = "Fifa ranking system update", size=4, colour="#0072B2")
+###Magic by ggplot2
+# #Bar plot for the 206 countries
+# barRank <- recentRank %>% ggplot(aes(x=reorder(region, -rank), y=total_points, fill=confederation)) +
+#                           geom_bar(stat="identity") + coord_flip() + theme_light() +
+#                           scale_fill_brewer(palette="Paired") +
+#                           theme(axis.text=element_text(size=3), legend.position="None", panel.grid.major.y = element_blank()) + 
+#                           labs(title="The rank, according to total points, of the 206 countries of FIFA")
+
+#Confederation performance (average points and position)
+# gPoints <- recentRank %>% group_by(confederation) %>% ggplot(aes(x=reorder(confederation, total_points, FUN=mean),y=total_points,fill=confederation)) + 
+#             geom_boxplot(alpha=.75,size=.25) + geom_jitter(shape=16,position=position_jitter(0.2),size=1,alpha=.25) +
+#             theme_fivethirtyeight() + theme(legend.position='None') + 
+#             scale_fill_brewer(palette='Paired') + coord_flip() + labs(title='Confederation average points')
+evalPeriod <- data.frame(rank_df %>%
+                           filter(rank_date>='2014-06-07' & rank_date<='2018-06-07') %>%
+                           select(region, country_abrv, confederation, rank, total_points) %>%
+                           arrange(region))
+# Confederations
+caf <- data.frame(evalPeriod %>% filter(confederation=="CAF") %>% select(region, rank, total_points))
+afc <- data.frame(evalPeriod %>% filter(confederation=="AFC") %>% select(region, rank, total_points))
+uefa <- data.frame(evalPeriod %>% filter(confederation=="UEFA") %>% select(region, rank, total_points))
+ofc <- data.frame(evalPeriod %>% filter(confederation=="OFC") %>% select(region, rank, total_points))
+concacaf <- data.frame(evalPeriod %>% filter(confederation=="CONCACAF") %>% select(region, rank, total_points))
+conmebol <- data.frame(evalPeriod %>% filter(confederation=="CONMEBOL") %>% select(region, rank, total_points))
+
+totP <- mean(uefa[["total_points"]])
+
+gPoints <- evalPeriod %>% group_by(confederation) %>% ggplot(aes(x=reorder(confederation, total_points), y=mean(confederation[,"total_points"]), fill=confederation)) +
+            geom_bar(stat='identity') +
+            theme_fivethirtyeight() + theme(legend.position='None') +
+            scale_fill_brewer(palette='Paired') + labs(title='Confederation average points')
+
+gRank <- recentRank %>% group_by(confederation) %>% ggplot(aes(x=reorder(confederation, -rank, FUN=mean),y=rank,fill=confederation)) + geom_boxplot(alpha=.75,size=.25) + geom_jitter(shape=16,position=position_jitter(0.2),size=1,alpha=.25) +
+          theme_fivethirtyeight() + theme(legend.position='None') + 
+          scale_fill_brewer(palette='Paired') + coord_flip() + labs(title='Confederation average ranking')
+
+#
