@@ -1,4 +1,4 @@
-analyzer <- read.csv("c:/Users/Albert/Documents/Data_set_6_Fifa_Rankings/fifa_ranking.csv", header = TRUE)
+analyzer <- read.csv("fifa_ranking.csv")
 analyzerlollipopchart <- analyzer[57583:57652,c(2,4)]
 analyzerlollipopchart1 <- analyzer[57653:57722,c(2,4)]
 analyzerlollipopchart2 <- analyzer[57723:57793,c(2,4)]

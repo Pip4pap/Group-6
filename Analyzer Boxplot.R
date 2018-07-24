@@ -1,7 +1,5 @@
-analyzer <- read.csv("c:/Users/Albert/Documents/Data_set_6_Fifa_Rankings/fifa_ranking.csv", header = TRUE)
+analyzer <- read.csv("fifa_ranking.csv", header = TRUE)
 analyzerboxplot <- analyzer[57583:57793,c(1:4,15)]
-analyzerboxplot
-
 require("RColorBrewer")
 boxplot(analyzerboxplot$total_points~analyzerboxplot$confederation,
         col = brewer.pal(12,"Set3"),
