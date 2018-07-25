@@ -173,3 +173,30 @@ rankChangeTop <- tail(topTen,10) %>% ggplot(aes(x=reorder(region, rank_change), 
   scale_y_continuous(name = "Rank Change", breaks = seq(0, 22, 2)) +
   scale_x_discrete(name="Country")+
   labs(title="The best movers as of June, 2018")
+#Top ranked team from each confederation
+topConfedTeam <- aggregate(total_points~confederation, recentRank, max)
+topConfedTeam$region <- c("Australia", "Tunisia", "Mexico", "Brazil", "New Zealand", "Germany")
+ggplot(topConfedTeam, aes(x=region, y=total_points, fill=confederation)) +
+  geom_bar(stat="identity") +
+  theme_light() +
+  scale_fill_brewer(palette="Paired") +
+  theme(
+    axis.text = element_text(size=11),
+    legend.text=element_text(size=10),
+    legend.key.size = unit(.3, "cm"),
+    panel.grid.major.y=element_line(colour = '#A8A8A8')
+  ) +
+  scale_y_continuous(name="Total Points", breaks = seq(0, 1600, 200)) + scale_x_discrete(name="Country") +
+  labs(title="The top team from each confederation")
+#Correlation between total_points and rank
+ggplot(recentRank, aes(x=rank, y=total_points, color=confederation)) +
+  geom_point() + geom_smooth(method=lm, se=FALSE) +
+  scale_fill_brewer(palette="Set1") +
+  theme(
+    axis.text = element_text(size=11),
+    legend.text=element_text(size=10),
+    legend.key.size = unit(.3, "cm"),
+    panel.grid.major.y=element_line(colour = '#A8A8A8')
+  ) +
+  scale_y_continuous(name="Total Points", breaks = seq(0, 1600, 200)) + scale_x_continuous(name="Rank", breaks=seq(0, 210, 10)) +
+  labs(title="Relationship between total points and rank of a team")
