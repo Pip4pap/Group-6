@@ -1,0 +1,32 @@
+
+.main-header .logo {
+        font-family: "Georgia", Times, "Times New Roman", serif;
+        font-weight: bold;
+        font-size: 24px;
+}
+p,ul{
+ margin:20px;
+font-size: 16px;
+}
+.tab-pane{
+	margin:0px 30px;
+}
+
+.plot-title{
+	margin :0px;
+}
+.small-box p{
+	margin:0px;
+	font-size:20px;
+	color:red;
+}
+.small-box i{
+	font-size:40px;
+}
+
+
+
+
+
+
+
