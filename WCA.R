@@ -12,7 +12,7 @@ WCR_data <- read.csv("fifa_ranking.csv")
 country <- levels(WCR_data$country_full)
 all_countries_sorted <- country[ order(country)]
 #for the select input of confederations
-conf <-levels(data$confederation)
+conf <-levels(WCR_data$confederation)
 all_conf <- c("All confederations",conf)
 
 #Correct country names in dataset to match those in rworldmap 
