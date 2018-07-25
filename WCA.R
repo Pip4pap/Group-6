@@ -41,7 +41,7 @@ WCR_data <- subset(WCR_data, WCR_data$region != "wales")
 #Filter out most previous rankings and use
 recentRank <- data.frame(WCR_data %>%
                            filter(rank_date=='2018-06-07') %>%
-                           select(region, country_abrv, confederation, rank, total_points) %>%
+                           select(region, country_abrv, confederation, rank, total_points,rank_change) %>%
                            arrange(region))
 #Get information for countries from Maps package (Using ggplot2's function tho)
 countriesMap <- map_data("world")
@@ -58,7 +58,16 @@ cols$region <- as.character(cols$region)
 lead <- data.frame(left_join(lead, cols, by='region'))
 #Mutate-merge 'regions' from Maps with most recent rankings data
 results <- data.frame(left_join(countriesMap, recentRank %>% select(confederation, region), by="region"))
-
+#Filter out rankings for past 4 years
+evalPeriod <- data.frame(rank_df %>%
+                           filter(rank_date>='2014-06-07' & rank_date<='2018-06-07') %>%
+                           select(region, country_abrv, confederation, rank, total_points) %>%
+                           arrange(region))
+confPoints <- aggregate(total_points~confederation, evalPeriod, mean)
+topTen <- recentRank[order(recentRank$rank),]
+topFive <- recentRank[order(recentRank$rank_change),]
+topConfedTeam <- aggregate(total_points~confederation, recentRank, max)
+topConfedTeam$region <- c("Australia", "Tunisia", "Mexico", "Brazil", "New Zealand", "Germany")
 # user interface
 
 ui <- dashboardPage(
@@ -74,16 +83,21 @@ ui <- dashboardPage(
                icon = icon("home")
       ),
       menuItem("Team Analysis",
-               tabName = "Team_Analysis"
+               tabName = "Team_Analysis",
+               icon = icon("sort", class="fa-sort")
+               
       ),
       menuItem("Team seeding",
-               tabName = "Team_seeding"
+               tabName = "Team_seeding",
+               icon = icon("home", class="fas fa-spinner")
       ),
       menuItem("Visualisations",
-               tabName = "Visualisations"
+               tabName = "Visualisations",
+               icon = icon("bar-chart-o", class="fa-chart-pie")
       ),
       menuItem("Summary",
-               tabName = "Summary"
+               tabName = "Summary",
+               icon = icon("list-alt")
       )
     )
     
@@ -205,7 +219,8 @@ ui <- dashboardPage(
                 
                 sidebarLayout(
                   mainPanel(
-                    h1("Team Seeding")
+                    h1("Team Seeding"),
+                    htmlOutput(outputId = "seeding_sub_title")
                   ),
                   sidebarPanel(
                     selectInput(inputId = "confederation",
@@ -267,7 +282,8 @@ ui <- dashboardPage(
       tabItem(tabName = "Visualisations",
               fluidRow(
                 plotOutput(outputId = "plot_name1"),
-                htmlOutput(outputId = "legend"),
+                htmlOutput(outputId = "legend"),#
+                htmlOutput(outputId = "Desc_plot_name1"),
                 plotOutput(outputId = "plot_name2"),
                 htmlOutput(outputId = "Desc_plot_name2"),
                 plotOutput(outputId = "plot_name3"),
@@ -275,7 +291,21 @@ ui <- dashboardPage(
                 plotOutput(outputId = "plot_name4"),
                 htmlOutput(outputId = "Desc_plot_name4"),
                 plotOutput(outputId = "plot_name5"),
-                htmlOutput(outputId = "Desc_plot_name5")
+                htmlOutput(outputId = "Desc_plot_name5"),
+                plotOutput(outputId = "plot_name6"),
+                htmlOutput(outputId = "Desc_plot_name6"),
+                plotOutput(outputId = "plot_name7"),
+                htmlOutput(outputId = "Desc_plot_name7"),
+                plotOutput(outputId = "plot_name8"),
+                htmlOutput(outputId = "Desc_plot_name8"),
+                plotOutput(outputId = "plot_name9"),
+                htmlOutput(outputId = "Desc_plot_name9"),
+                plotOutput(outputId = "plot_name10"),
+                htmlOutput(outputId = "Desc_plot_name10"),
+                plotOutput(outputId = "plot_name11"),
+                htmlOutput(outputId = "Desc_plot_name11"),
+                plotOutput(outputId = "plot_name12"),
+                htmlOutput(outputId = "Desc_plot_name12")
               )
       ),
       tabItem(tabName = "Summary",
@@ -613,6 +643,13 @@ server <-function(input,output){
     )
   })
   #Team seeding
+  
+  output$seeding_sub_title <- renderUI({
+    HTML(
+      "<img src='conf_logos.jpg' class='img-fluid' style='max-width: 100%;height:auto'/>"
+    )
+    
+  })
   output$seeding_title <- renderUI({
     if(input$confederation =="All confederations"){
       HTML(
@@ -971,12 +1008,12 @@ server <-function(input,output){
     ggplot(lead, aes(x=rank_date_month, y=1), legend=TRUE) + 
       geom_histogram(aes(fill=color),stat='identity',color='black',size=.001) +
       scale_fill_identity() +
-      theme_light()+ coord_flip() + scale_x_date(date_breaks = "1 year", date_labels =  "%Y") + 
+      theme_light()+ coord_flip() + scale_x_date(name="Rank Date Month",date_breaks = "1 year", date_labels =  "%Y") + 
       labs(title='FIFA World Ranking Leaders', subtitle='per month') + 
       theme(legend.position='right',legend.direction='vertical',axis.text.x=element_blank(),panel.grid.major.x=element_blank(),
             legend.text=element_text(size=10), legend.key.size = unit(.3, "cm")
       ) +
-      ylim(0, 1.0)
+      ylim(0,1.0)
   })
   CntColors <-c("1"="#87CEEB", "2"="#DC143C", "3"="#FFD700", "4"="#000080","5"="#000000","6"="#00cc66","7"="#FFA500","8"="#8B2500")
   output$legend <- renderUI({
@@ -1019,6 +1056,13 @@ server <-function(input,output){
                ))
     )
   })
+  output$Desc_plot_name1 <- renderUI({
+    HTML(
+      "<p>This graph shows the time periods each national football team has been at the top of the FIFA World rankings.
+      <br>Since the first rankings in 1993, Brazil has enjoyed the top spot for most of the time but Germany currently remains the top ranked team.</p>",
+      "<p></p>"
+    )
+  })
   
   output$plot_name2 <- renderPlot({
     recentRank %>% group_by(confederation) %>% ggplot(aes(x=reorder(confederation, -rank, FUN=mean),y=rank,fill=confederation)) + geom_boxplot(alpha=.75,size=.25) + geom_jitter(shape=16,position=position_jitter(0.2),size=1,alpha=.25) +
@@ -1027,12 +1071,15 @@ server <-function(input,output){
                             panel.grid.minor = element_line(colour = '#505050'),
                             panel.grid.major = element_line(colour = '#505050')
       ) + 
-      scale_fill_brewer(palette='Paired') + coord_flip() + labs(title='Confederation average ranking')
+      scale_fill_brewer(palette='Paired') + coord_flip() + labs(title='Confederation performance according to average ranking')+scale_x_discrete(name="Confederation")
   })
   
   output$Desc_plot_name2 <- renderUI({
     HTML(
-      "<p>The South American confederation CONMEBOL,on average, has better rank than the rest owing to the small number of member teams that rank high in the FIFA rankings.</p>"
+      "<p> From the boxplot above, AFC, CAF, UEFA and CONCACAF have long boxes showing that their member teams have quite varying ranks.
+      <br>In CONMEBOL, the ranks of the member teams are close to each other thus a short box. It means the SouthAmerican teams can be found in the same place on the rankings table.
+      <br>The high median and long upper whisker observed on the CONMEBOL and UEFA boxplots mean more teams in those confederations have a high total point score. The rest of the confederations 
+      have a low median because on average, their member teams have a low total points score. </p>"
     )
   })
   
@@ -1044,31 +1091,224 @@ server <-function(input,output){
                             panel.grid.minor = element_line(colour = '#505050'),
                             panel.grid.major = element_line(colour = '#505050')
       ) +
-      scale_fill_brewer(palette='Paired') + coord_flip() + labs(title='Confederation average points')
+      scale_fill_brewer(palette='Paired') + coord_flip() + labs(title='Confederation performance according to average points', subtitle="from most recent ranking")+scale_x_discrete(name="Confederation")
   })
   
   output$Desc_plot_name3 <- renderUI({
     HTML(
-      "<p>Teams from South America on average have more total points and thus their confederation has more average total points than the rest.</p>"
+      "<p>
+      From the boxplot above, CONMEBOL, UEFA and CONCACAF have long boxes showing that their member teams have quite varying total points.
+      <br>In OFC, the total points of the member teams have a small range thus a short box.
+      <br>The high median and long upper whisker observed on the CONMEBOL and UEFA boxplots mean more teams in those confederations have a high total point score. The rest of the confederations 
+      have a low median because on average, their member teams have a low total points score. 
+      </p>"
     )
   })
   
   output$plot_name4 <- renderPlot({
-    #Insert code for plot 4
+    confPoints %>% ggplot(aes(x=confederation, y=total_points, fill=confederation)) +
+      geom_bar(stat='identity') +
+      theme_light() + theme(legend.position='None', axis.text = element_text(size=14),
+                            panel.grid.minor = element_line(colour = '#505050'),
+                            panel.grid.major.y = element_line(colour = '#505050')
+      ) +
+      scale_fill_brewer(palette='Paired') + labs(title='Confederation average points (previous 4 years)') + scale_y_continuous(name="Average total_points", breaks = seq(0, 1000, 200))
+  })
+  
+  output$Desc_plot_name4 <- renderUI({
+    HTML(
+      "<p>The graph above shows average points of confederations over the previous four years obtained by first getting the average of the total points of a confederation for each month.
+      <br>The average of those averages for each confederation is then plotted.
+      <br>Teams from South America on average have more total points and thus their confederation has more average total points than the rest.
+      </p>",
+      "<p></p>"
+    )
   })
   
   output$plot_name5 <- renderPlot({
-    #Insert code for plot 5
+    aggregate(rank~confederation, evalPeriod, mean) %>% ggplot(aes(x=confederation, y=rank, fill=confederation)) + geom_bar(stat = "identity")+
+      theme_light() + theme(legend.position='None',axis.text = element_text(size=14),
+                            panel.grid.minor = element_line(colour = '#505050'),
+                            panel.grid.major.y = element_line(colour = '#505050')
+      ) +
+      scale_fill_brewer(palette='Paired') + labs(title='Confederation average ranking (previous 4 years)') + scale_y_continuous(name="Average Rank")
   })
-  
+  output$Desc_plot_name5 <- renderUI({
+    HTML(
+      "<p>The graph above shows average rank of confederations over the previous four years obtained by first getting the average rank of a confederation for each month.
+      <br>The average of those averages for each confederation is then plotted.
+      <br>The South American confederation CONMEBOL,on average, has better rank than the rest owing to the small number of member teams that rank high in the FIFA rankings.
+      <br><b>Note:</b> The lower the bar, the higher the rank of the confederation. A higher rank means an overall high performance.
+      </p>",
+      "<p></p>"
+    )
+  })
+  output$plot_name6 <- renderPlot({
+    as.data.frame(table(recentRank$confederation)) %>% ggplot(aes(x=Var1, y=Freq, fill=Var1)) + geom_point(size=4)+
+      geom_segment(aes(x=Var1, 
+                       xend=Var1, 
+                       y=0, 
+                       yend=Freq)) + 
+      theme_light() + 
+      theme(legend.position = 'None',
+            axis.text = element_text(size = 14),
+            panel.grid.major.y = element_line(colour = '#505050'),
+            panel.grid.minor = element_line(colour = '#505050')
+      ) +
+      scale_fill_brewer(palette = 'Paired') + scale_x_discrete(name="Confederations")+scale_y_continuous(name="Number of teams", breaks = seq(0, 60, 4))
+  })
+  output$Desc_plot_name6 <- renderUI({
+    HTML(
+      "<p>The lollipop chart above shows the number of teams in each confederation as of June of 2018. CAF has the most number of member teams  
+      while UEFA has just one member less than the former. CONMEBOL has the fewest member teams, a factor that has aided its overall perofrmance.
+      </p>"
+    )
+  })
+  output$plot_name7 <- renderPlot({
+    topTen[1:10,]  %>% ggplot(aes(x=reorder(region, -rank), y=total_points, fill=confederation)) +
+      geom_bar(stat="identity") + coord_flip() + theme_light() +
+      scale_fill_brewer(palette="Paired") +
+      theme(axis.text=element_text(size=13), legend.position="None", panel.grid.major.y = element_blank(),
+            panel.grid.major.x = element_line(colour = '#505050')
+      ) +
+      labs(title="The rank, according to total points, of the top 10 member countries of FIFA")+scale_x_discrete(name="Team")
+  })
+  output$Desc_plot_name7 <- renderUI({
+    HTML(
+      "<p>The top 10 spots are dominated by teams from only two confederations namely; CONMEBOL and UEFA, with UEFA having more teams.</p>"
+    )
+  })
+  output$plot_name8 <- renderPlot({
+    tail(topTen, 10)  %>% ggplot(aes(x=reorder(region, -rank), y=total_points, fill=confederation)) +
+      geom_bar(stat="identity") + coord_flip() + theme_light() +
+      scale_fill_brewer(palette="Paired") +
+      theme(axis.text=element_text(size=13), legend.position="None", panel.grid.major.y = element_blank(),
+            panel.grid.major.x = element_line(colour = '#505050')
+      ) +
+      labs(title="The rank, according to total points, of the bottom 10 member countries of FIFA")+scale_x_discrete(name="Team")
+  })
+  output$Desc_plot_name8 <- renderUI({
+    HTML(
+      "<p>
+      From the bar plot above, the bottom 6 teams have no total points due to the fact that four years haven't elapsed since they 
+      became member nations of FIFA.
+      <br>An evaluation period of <b>four years</b> is needed to calculate the total points of a team. 
+      </p>"
+    )
+  })
+  output$plot_name9 <- renderPlot({
+    tail(topFive,5) %>% ggplot(aes(x=reorder(region, rank_change), y=rank_change, fill=confederation))+
+      geom_bar(stat="identity") + theme_light()+
+      scale_fill_brewer(palette = "Paired") +
+      theme(axis.text = element_text(size=11), legend.position = "None",
+            axis.line = element_line(colour = "darkgreen", size = 1, linetype = "solid"),
+            panel.grid.major.y=element_line(colour = '#A8A8A8')
+      )+
+      scale_y_continuous(name = "Rank Change", breaks = seq(0, 22, 2)) +
+      scale_x_discrete(name="Country")+
+      labs(title="The best movers as of June, 2018")
+  })
+  output$Desc_plot_name9 <- renderUI({
+    HTML(
+      "<p>
+      Azerbaijan has moved an incredible 21 positions <b>up</b> the rankings table since joining FIFA. Impressive performances at the RIO 2016 Olympics and
+      FIFA World Cup qualifying competition have seen them soar this high.
+      </p>"
+    )
+  })
+  output$plot_name10 <- renderPlot({
+    topFive[1:5,] %>% ggplot(aes(x=reorder(region, rank_change), y=rank_change, fill=confederation))+
+      geom_bar(stat="identity") + theme_light()+
+      scale_fill_brewer(palette = "Paired") +
+      theme(axis.text = element_text(size=13), legend.position = "None",
+            axis.line = element_line(colour = "red", size = 1, linetype = "solid"),
+            panel.grid.major.y=element_line(colour = '#A8A8A8')
+      )+
+      scale_y_reverse(name = "Rank Change", breaks = seq(0, -20, -2)) +
+      scale_x_discrete(name="Country")+
+      labs(title="The worst movers as of June, 2018")
+  })
+  output$Desc_plot_name10 <- renderUI({
+    HTML(
+      "<p>
+      Guyana men's team have dropped 18 positions as per the latest rankings thus the worst movers currently.
+      </p>"
+    )
+  })
+  output$plot_name11 <- renderPlot({
+    ggplot(topConfedTeam, aes(x=region, y=total_points, fill=confederation)) +
+      geom_bar(stat="identity") +
+      theme_light() +
+      scale_fill_brewer(palette="Paired") +
+      theme(
+        axis.text = element_text(size=11),
+        legend.text=element_text(size=10),
+        legend.key.size = unit(.3, "cm"),
+        panel.grid.major.y=element_line(colour = '#A8A8A8')
+      ) +
+      scale_y_continuous(name="Total Points", breaks = seq(0, 1600, 200)) + scale_x_discrete(name="Country") +
+      labs(title="The top team from each confederation")
+  })
+  output$Desc_plot_name11 <- renderUI({
+    HTML(
+      "<p>
+      From the graph above, most notably is the relatively high total points score of the leading teams Germany and Brazil. They
+      come from strong confederations where there's tough competition due to the high quality of the member teams. 
+      </p>"
+    )
+  })
+  output$plot_name12 <- renderPlot({
+    ggplot(recentRank, aes(x=rank, y=total_points, color=confederation)) +
+      geom_point() + geom_smooth(method=lm, se=FALSE) +
+      scale_fill_brewer(palette="Set1") +
+      theme(
+        axis.text = element_text(size=11),
+        legend.text=element_text(size=10),
+        legend.key.size = unit(.3, "cm"),
+        panel.grid.major.y=element_line(colour = '#A8A8A8')
+      ) +
+      scale_y_continuous(name="Total Points", breaks = seq(0, 1600, 200)) + scale_x_continuous(name="Rank", breaks=seq(0, 210, 10)) +
+      labs(title="Relationship between total points and rank of a team")
+  })
+  output$Desc_plot_name12 <- renderUI({
+    HTML(
+      "<p>
+      There's a negative correlation between the total points and rank of a team. The more points a team has, the smaller its rank score, the 
+      higher it is on the rankings table. Low points correlated to a big rank score thus a low table position.
+      </p>"
+    )
+  })
   output$Summary <- renderUI({
     HTML(
       "<h1>Summary from the FIFA World Rankings.</h1>",
       "<p>FIFA the world's governing football association currently contains 216 member nations which have increased from 168 since 1993 and FIFA has been 
       ranking it's member naions since then basing on the results of the games played. FIFA contains 6 confederations that help to govern football in individual 
-      confederations across the whole world namely: AFC, CAF, CONCACAF, CONMEBOL, OFC and UEFA.<br/>
+      confederations across the whole world namely: AFC, CAF, CONCACAF, CONMEBOL, OFC and UEFA.<br/></br>
       
+      Germany is the country that has attained the highest number of total points which are 1775.03 points. These are the highest points attained by Germany 
+      since 24/8/2011. The countries with the least total points ever attained are Netherlands Antilles, RCS, Serbia and Montenegro, Yugoslavia and finally Zaire.<br><br>
+      
+      The countries that have attained the highest rank of number 1 ever since the ranking process began in 1993 are: Argentina, Belgium, Brazil, France, Germany, 
+      Italy, Netherlands and Spain. <br><br>
+      
+      The countries with the lowest ranks since the ranking process started in 1993 are: American Samoa(205), Andorra (206), Anguilla (209), Bahamas (208), Bhutan (209), 
+      British Virgin Islands (206), Cayman Islands (205), Comoros (207), Cook Islands (207), Djibouti (207), Eritrea (207), Guam (205), Mauritania (206), Mongolia (205),
+      Papua New Guinea (206), San Marino (208), Somalia (207), South Sudan (205), Timor-Leste (206), Tonga (207), Turks and Caicos Islands (207).<br>
+      The mean of all the countries’ total points since FIFA began the ranking process using total points on 24/8/2011 is 122.0686 points.<br></br>
+      
+      As of the 7th of June, 2018 ranking, the best movers are: 
       </p>",
+      "<ul>
+      <li>Azerbaijan moving from 126 to 105, going up by 21 positions and accumulating 76 points.</li>
+      <li>Papua New Guinea moving from 180 to 166, going up by 14 positions and accumulating 25 points.</li>
+      <li>El Salvador moving from 85 to 72, going up by 13 positions and accumulating 50 points.</li>
+      </ul>",
+      "<p>The worst movers are: </p>",
+      "<ul>
+      <li>Guyana moving from 164 to 182, dropping by 18 positions and losing 38 points.</li>
+      <li>Kyrgyz Republic moving from 75 to 92, dropping by 17 positions and losing 61 points.</li>
+      <li>Guinea-Bissau moving from 104 to 121, dropping by 17 points and losing 75 points.</li>
+      </ul>",
       "<h2>History of FIFA World Rankings</h2>",
       "<h4>1993–1998 calculation method</h4>",
       "<p>The ranking formula used from August 1993 until December 1998 was very simplistic and quickly became noticed for its lack of supporting factors. When the 
@@ -1098,11 +1338,11 @@ server <-function(input,output){
       
       "<h2>Uses of FIFA World Rankings</h2>",
       "<ul>
-      <li>The rankings are used by FIFA to rank the progression and current ability of the national football teams of its member nations, and claims that they 
-      create a reliable measure for comparing national A-teams</li>
-      <li>They are used as part of the calculation, or the entire grounds to seed competitions. In the FIFA World Cup qualification tournament, the rankings 
-      are used to seed the groups in the competitions involving AFC,CONCACAF,CAF and UEFA. Ranking are used to determine the seeds for the FIFA World Cup final draw</li>
-      <li>The rankings are also used to determine the winners of the two annual awards national teams receive on the basis of their performance in the rankings.</li>
+        <li>The rankings are used by FIFA to rank the progression and current ability of the national football teams of its member nations, and claims that they 
+        create a reliable measure for comparing national A-teams</li>
+        <li>They are used as part of the calculation, or the entire grounds to seed competitions. In the FIFA World Cup qualification tournament, the rankings 
+        are used to seed the groups in the competitions involving AFC,CONCACAF,CAF and UEFA. Ranking are used to determine the seeds for the FIFA World Cup final draw</li>
+        <li>The rankings are also used to determine the winners of the two annual awards national teams receive on the basis of their performance in the rankings.</li>
       </ul>"
     )
   })

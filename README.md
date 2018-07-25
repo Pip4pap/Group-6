@@ -8,13 +8,17 @@ Group-6
 	* Mirembe Esther Nangobi		216002807	16/U/7070/PS
 	* Muhumuza Albert			215010171	15/U/8034/PS
 
-This project aims to examine the effectiveness of FIFA World rankings in predicting the winner of the World Cup tournament. The project documents are:
-	1. Concept Paper
-	2. Software Requirements Specification(SRS)
-	3. Design Document
-	4. Project Report
-Currently, **only** the concept paper is available
+This project aims to create software that predicts how far a team will go in a FIFA World Cup tournament. The project documents are:
 
-A program written in R language called _World Cup analyzer_, takes in FIFA World rankings from a dataset and analyzes and visualises them and predicts who wins the World Cup tournament. The program is currently in development...
+	* Concept Paper - (CONCEPTPAPER.docx)
+	* Software Requirements Specification(SRS) - (World Cup Analyzer SRS.docx)
+	* Design Document - (World Cup Analyzer Design Document.docx)
+	* Project Report - (World Cup Analyzer Final Project Report.docx)
+
+Currently, **all** the documents are available. 
+
+A program written in R language called _World Cup analyzer_, takes in FIFA World rankings from a dataset, analyzes, visualises them and predicts how far a team will go in a FIFA World Cup tournament.
+
+The visualization of the dataset are contained in a file called _rankPlot.R_ and the app file prepared is named _WCA.R_.  
 
 Also included in the project files are slides about regression analysis and an example written in R to illustrate regression analysis.
