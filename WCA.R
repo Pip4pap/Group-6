@@ -1348,5 +1348,5 @@ server <-function(input,output){
   })
   
   }
-
+#End of server
 shinyApp(ui, server)
