@@ -19,6 +19,8 @@ Currently, **all** the documents are available.
 
 A program written in R language called _World Cup analyzer_, takes in FIFA World rankings from a dataset, analyzes, visualises them and predicts how far a team will go in a FIFA World Cup tournament.
 
+**Usage**: Run the app file in Rstudio (An R IDE)
+
 The visualization of the dataset are contained in a file called _rankPlot.R_ and the app file prepared is named _WCA.R_.  
 
 Also included in the project files are slides about regression analysis and an example written in R to illustrate regression analysis.
